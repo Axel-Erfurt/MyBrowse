@@ -25,6 +25,11 @@ css = """
 #window {
         background-color: #eee;
 }
+popover {
+    background: #666;
+    color: #eee;
+    font-size: 9pt;
+}
 """
 
 if not os.path.exists(conf_dir):
@@ -53,6 +58,7 @@ class Browser(Gtk.Window):
         
         self.set_name("window")
         self.view = WebKit2.WebView()
+        self.view.set_zoom_level(0.9)
         self.view.connect("notify::title", self.change_title)
         self.view.connect("notify::uri", self.change_uri)
         self.view.connect("notify::estimated-load-progress", self.load_progress)
@@ -100,14 +106,18 @@ class Browser(Gtk.Window):
         # popover links
         self.popover = Gtk.Popover()
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        # google
-        url_btn_1 = Gtk.ModelButton(label="Google")
+        # QWant
+        url_btn_1 = Gtk.ModelButton(label="QWant Lite")
         url_btn_1.connect("clicked", self.url_btn_1_clicked)
         vbox.pack_start(url_btn_1, False, True, 10)
         # ubuntu forum
         url_btn_2 = Gtk.ModelButton(label="Ubuntu Users Forum")
         vbox.pack_start(url_btn_2, False, True, 10)
         url_btn_2.connect("clicked", self.url_btn_2_clicked)
+        # Google
+        url_btn_3 = Gtk.ModelButton(label="Google")
+        url_btn_3.connect("clicked", self.url_btn_3_clicked)
+        vbox.pack_start(url_btn_3, False, True, 10)
         vbox.show_all()
         self.popover.add(vbox)
         self.popover.set_position(Gtk.PositionType.BOTTOM)
@@ -177,7 +187,7 @@ class Browser(Gtk.Window):
         self.view.load_uri(search_url)
         
     def url_btn_1_clicked(self, *args):
-        url = "https://google.de"
+        url = "https://lite.qwant.com/"
         self.addressbar.set_text(url)
         self.view.load_uri(url)
         
@@ -185,6 +195,12 @@ class Browser(Gtk.Window):
         url = "https://forum.ubuntuusers.de/last12/"
         self.addressbar.set_text(url)
         self.view.load_uri(url)
+        
+    def url_btn_3_clicked(self, *args):
+        url = "https://google.de"
+        self.addressbar.set_text(url)
+        self.view.load_uri(url)
+
         
 if __name__ == "__main__":
     browser = Browser()
