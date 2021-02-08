@@ -2,7 +2,8 @@
 import gi
 gi.require_version('WebKit2', '4.0')
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, WebKit2
+gi.require_version('Gdk', '3.0')
+from gi.repository import Gtk, WebKit2, Gdk
 import configparser
 import os
 import sys
@@ -11,55 +12,119 @@ browser_id = 'MyBrowse 0.1'
 
 conf_dir = f"{os.path.expanduser('~')}/.config/mybrowse/"
 
+css = """
+#addressbar progress
+{
+   background: #e9f3ff;
+   border: 1px;
+}
+.button :hover
+{
+   background: #ace;
+}
+#window {
+        background-color: #eee;
+}
+"""
+
 if not os.path.exists(conf_dir):
-	try:
-		os.makedirs(conf_dir)
-	except OSError as e:
-		print(e)
-		pass
+    try:
+        os.makedirs(conf_dir)
+    except OSError as e:
+        print(e)
+        pass
 
 config = configparser.ConfigParser()
+
 config.read(conf_dir + 'mybrowse.cfg')
-startpage = config['General']['home']
-if len(sys.argv) > 1:
-	starturl = sys.argv[1]
-else:
-	starturl = startpage
+if not os.path.isfile(conf_dir + 'mybrowse.cfg'):
+    print("no config file found")
+    
 
 class Browser(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title='MyBrowse')
-
+        
+        if len(sys.argv) > 1:
+            self.startpage = sys.argv[1]
+        else:
+            self.startpage = config['General']['home']
+        print(f'{self.startpage}')
+        
+        self.set_name("window")
         self.view = WebKit2.WebView()
-
-        self.vbox = Gtk.Box(orientation=Gtk.STYLE_CLASS_VERTICAL)
+        self.view.connect("notify::title", self.change_title)
+        self.view.connect("notify::uri", self.change_uri)
+        self.view.connect("notify::estimated-load-progress", self.load_progress)
+        self.vbox = Gtk.Box(orientation=Gtk.STYLE_CLASS_VERTICAL, 
+                            margin_left=5, margin_right=5, spacing=4)
         self.vbox.expand = True
-        self.vbox.set_spacing(10)
-        #self.set_icon_from_file(conf_dir + 'mybrowse.png')
+        self.set_icon_name("browser")
+#        self.set_icon_from_file(conf_dir + 'mybrowse.png')
 
-        self.menu = Gtk.Box(orientation=Gtk.STYLE_CLASS_HORIZONTAL)
+        # buttons
+        self.menu = Gtk.Box(orientation=Gtk.STYLE_CLASS_HORIZONTAL, spacing=4)
         self.menu.expand = False
         self.back = Gtk.Button()
-        self.back_arrow = Gtk.Image.new_from_icon_name('go-previous', Gtk.IconSize.SMALL_TOOLBAR)
+        self.back_arrow = Gtk.Image.new_from_icon_name('go-previous', 2)
         self.back.add(self.back_arrow)
         self.menu.add(self.back)
         self.forward = Gtk.Button()
-        self.forward_arrow = Gtk.Image.new_from_icon_name('go-next', Gtk.IconSize.SMALL_TOOLBAR)
+        self.forward_arrow = Gtk.Image.new_from_icon_name('go-next', 2)
         self.forward.add(self.forward_arrow)
         self.menu.add(self.forward)
         self.reload = Gtk.Button()
-        self.reload_arrow = Gtk.Image.new_from_icon_name('view-refresh', Gtk.IconSize.SMALL_TOOLBAR)
+        self.reload_arrow = Gtk.Image.new_from_icon_name('view-refresh', 2)
         self.reload.add(self.reload_arrow)
         self.menu.add(self.reload)
         self.home = Gtk.Button()
-        self.home_arrow = Gtk.Image.new_from_icon_name('go-home', Gtk.IconSize.SMALL_TOOLBAR)
+        self.home_arrow = Gtk.Image.new_from_icon_name('go-home', 2)
         self.home.add(self.home_arrow)
         self.menu.add(self.home)
+        
+        # addressbar
         self.addressbar = Gtk.Entry()
-        self.addressbar.set_text(starturl)
+        self.addressbar.set_name("addressbar")
+        self.addressbar.set_text(self.startpage)
         self.addressbar.set_width_chars(75)
-        self.menu.add(self.addressbar)
+        self.addressbar.set_progress_pulse_step(0.2)
+        self.menu.pack_start(self.addressbar, False, False, 20)
 
+        # searchbar
+        self.searchbar = Gtk.SearchEntry()
+        self.searchbar.set_placeholder_text("find")
+        self.searchbar.connect("activate", self.do_search)
+        self.searchbar.set_width_chars(32)
+        self.menu.pack_end(self.searchbar, False, False, 10)
+        
+        # popover links
+        self.popover = Gtk.Popover()
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        # google
+        url_btn_1 = Gtk.ModelButton(label="Google")
+        url_btn_1.connect("clicked", self.url_btn_1_clicked)
+        vbox.pack_start(url_btn_1, False, True, 10)
+        # ubuntu forum
+        url_btn_2 = Gtk.ModelButton(label="Ubuntu Users Forum")
+        vbox.pack_start(url_btn_2, False, True, 10)
+        url_btn_2.connect("clicked", self.url_btn_2_clicked)
+        vbox.show_all()
+        self.popover.add(vbox)
+        self.popover.set_position(Gtk.PositionType.BOTTOM)
+        img = Gtk.Image.new_from_icon_name("browser", 2)
+        button = Gtk.MenuButton(label="Links", image=img, popover=self.popover, relief=2)
+        self.menu.pack_end(button, False, False, 20)
+        
+        # style
+        provider = Gtk.CssProvider()
+        provider.load_from_data(bytes(css.encode()))
+        style = self.get_style_context()
+        style.add_class("button")
+        screen = Gdk.Screen.get_default()
+        priority = Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        style.add_provider_for_screen(screen, provider, priority)        
+        
+        # connect
         self.addressbar.connect("activate", self.change_url)
         self.back.connect("clicked", self.go_back)
         self.forward.connect("clicked", self.go_forward)
@@ -72,7 +137,7 @@ class Browser(Gtk.Window):
 
         self.vbox.pack_start(self.sw, True, True, 0)
         self.add(self.vbox)
-        self.view.load_uri(starturl)
+        self.view.load_uri(self.startpage)
 
 
     def change_url(self, widget):
@@ -89,13 +154,44 @@ class Browser(Gtk.Window):
         self.view.reload()
 
     def go_home(self, widget):
-        self.addressbar.set_text(startpage)
-        self.view.load_uri(startpage)
+        self.addressbar.set_text(self.startpage)
+        self.view.load_uri(self.startpage)
 
+    def change_title(self, widget, data, *arg):
+        title = widget.get_title()
+        self.set_title(title)
+        
+    def change_uri(self, widget, data, *arg):
+        uri = widget.get_uri()
+        self.addressbar.set_text(uri)
 
+    def load_progress(self, widget, data, *arg):
+        progress = widget.get_estimated_load_progress()
+        self.addressbar.set_progress_fraction(progress)
+
+    def do_search(self, widget):
+        search_text = f'"{self.searchbar.get_text()}"'
+        print(f"searching for '{search_text}'")
+        search_url = f"{self.startpage}search?q={search_text}"
+        self.addressbar.set_text(search_url)
+        self.view.load_uri(search_url)
+        
+    def url_btn_1_clicked(self, *args):
+        url = "https://google.de"
+        self.addressbar.set_text(url)
+        self.view.load_uri(url)
+        
+    def url_btn_2_clicked(self, *args):
+        url = "https://forum.ubuntuusers.de/last12/"
+        self.addressbar.set_text(url)
+        self.view.load_uri(url)
+        
 if __name__ == "__main__":
     browser = Browser()
     browser.set_default_size(1024, 704)
+    #browser.resize(1200, 900)
+    browser.move(0, 0)
     browser.connect("delete-event", Gtk.main_quit)
     browser.show_all()
+    browser.maximize()
     Gtk.main()
