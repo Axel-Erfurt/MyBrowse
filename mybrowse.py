@@ -21,6 +21,7 @@ css = """
 .button :hover
 {
    background: #ace;
+   color: #222;
 }
 #window {
         background-color: #eee;
@@ -105,19 +106,20 @@ class Browser(Gtk.Window):
         
         # popover links
         self.popover = Gtk.Popover()
+        self.popover.set_property('margin', 0)
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         # QWant
         url_btn_1 = Gtk.ModelButton(label="QWant Lite")
         url_btn_1.connect("clicked", self.url_btn_1_clicked)
-        vbox.pack_start(url_btn_1, False, True, 10)
+        vbox.pack_start(url_btn_1, False, True, 2)
         # ubuntu forum
         url_btn_2 = Gtk.ModelButton(label="Ubuntu Users Forum")
-        vbox.pack_start(url_btn_2, False, True, 10)
+        vbox.pack_start(url_btn_2, False, True, 2)
         url_btn_2.connect("clicked", self.url_btn_2_clicked)
         # Google
         url_btn_3 = Gtk.ModelButton(label="Google")
         url_btn_3.connect("clicked", self.url_btn_3_clicked)
-        vbox.pack_start(url_btn_3, False, True, 10)
+        vbox.pack_start(url_btn_3, False, True, 2)
         vbox.show_all()
         self.popover.add(vbox)
         self.popover.set_position(Gtk.PositionType.BOTTOM)
