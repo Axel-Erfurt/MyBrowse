@@ -5,12 +5,12 @@ gi.require_version('Gtk', '3.0')
 gi.require_version('Gdk', '3.0')
 from gi.repository import Gtk, WebKit2, Gdk
 import configparser
-import os
+from pathlib import Path
 import sys
 
 browser_id = 'MyBrowse 0.1'
 
-conf_dir = f"{os.path.expanduser('~')}/.config/mybrowse/"
+conf_dir = f"{Path.home()}/.config/mybrowse/"
 
 link_list = {"QWant Lite": "https://lite.qwant.com/", 
             "Ubuntu Users Forum": "https://forum.ubuntuusers.de/last12/", 
@@ -60,19 +60,26 @@ popover {
     font-size: 8pt;
 }
 """
-
-if not os.path.exists(conf_dir):
-    try:
-        os.makedirs(conf_dir)
-    except OSError as e:
-        print(e)
-        pass
-
 config = configparser.ConfigParser()
+conf_dir = f"{Path.home()}/.config/mybrowse/"
+
+p = Path(conf_dir)
+
+if p.is_dir():
+    print(f"{conf_dir} exists")
+else:
+    print(f"{conf_dir} not exists, creating ...")   
+    p.mkdir()
+
+conf_file = p / 'mybrowse.cfg'
+
+if Path.is_file(conf_file):
+    print(f"found config file: {conf_file}")
+    config.read(conf_file)
+else:
+    print("no config file found")
 
 config.read(conf_dir + 'mybrowse.cfg')
-if not os.path.isfile(conf_dir + 'mybrowse.cfg'):
-    print("no config file found")
     
 
 class Browser(Gtk.Window):
@@ -204,6 +211,8 @@ class Browser(Gtk.Window):
 
     def change_url(self, widget):
         url = self.addressbar.get_text()
+        if not url.startswith("http"):
+            url = f"https://{url}"
         self.view.load_uri(url)
 
     def go_back(self, widget):
