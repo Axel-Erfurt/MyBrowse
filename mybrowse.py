@@ -143,7 +143,7 @@ class Browser(Gtk.Window):
         self.searchbar.set_width_chars(32)
         self.menu.pack_end(self.searchbar, False, False, 10)
         
-#        # popover links
+        # popover links
         self.popover = Gtk.Popover()
         self.popover.set_property('margin', 0)
         link_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -160,6 +160,7 @@ class Browser(Gtk.Window):
         img = Gtk.Image.new_from_icon_name("browser", 2)
         button = Gtk.MenuButton(label="Links", image=img, popover=self.popover, relief=2)
         self.menu.pack_end(button, False, False, 20)
+    
         
         # style
         provider = Gtk.CssProvider()
@@ -239,7 +240,9 @@ class Browser(Gtk.Window):
         
     def on_key_event(self, widget, event, *args):
         kname  = Gdk.keyval_name(event.keyval)
-        if event.keyval == 65288 and not self.searchentry.has_focus():
+        if (event.keyval == 65288 
+            and not self.searchentry.has_focus()
+            and not self.addressbar.has_focus()):
             self.view.go_back()
         if (kname == "f" and
             event.state == Gdk.ModifierType.CONTROL_MASK):
@@ -271,6 +274,9 @@ class Browser(Gtk.Window):
             self.status_label.set_text(hit_test.get_link_uri ())
         else:
             self.status_label.set_text("")
+            
+    def search_icon_pressed(self, *args):
+        print("search_icon_pressed")
 
         
 if __name__ == "__main__":
