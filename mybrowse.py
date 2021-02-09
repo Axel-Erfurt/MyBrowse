@@ -237,21 +237,6 @@ class Browser(Gtk.Window):
         self.addressbar.set_text(search_url)
         self.view.load_uri(search_url)
         
-    def url_btn_1_clicked(self, *args):
-        url = "https://lite.qwant.com/"
-        self.addressbar.set_text(url)
-        self.view.load_uri(url)
-        
-    def url_btn_2_clicked(self, *args):
-        url = "https://forum.ubuntuusers.de/last12/"
-        self.addressbar.set_text(url)
-        self.view.load_uri(url)
-        
-    def url_btn_3_clicked(self, *args):
-        url = "https://google.de"
-        self.addressbar.set_text(url)
-        self.view.load_uri(url)
-        
     def on_key_event(self, widget, event, *args):
         kname  = Gdk.keyval_name(event.keyval)
         if event.keyval == 65288 and not self.searchentry.has_focus():
