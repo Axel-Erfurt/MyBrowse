@@ -172,7 +172,7 @@ class Browser(Gtk.Window):
         
         # search inside page
         self.page_finder = WebKit2.FindController(web_view=self.view)
-        self.page_finder.connect("notify::counted-matches", self.found_text)
+        self.page_finder.connect("counted-matches", self.print_match_count)
         self.search_win = Gtk.SearchBar()
         self.searchentry = Gtk.SearchEntry()
         self.searchentry.connect("activate", self.find_in_page)
@@ -274,10 +274,12 @@ class Browser(Gtk.Window):
     def find_in_page(self, *args):
         search_text = self.searchentry.get_text()
         if not search_text == "":
+            self.page_finder.count_matches(search_text, 1, 500)
             self.page_finder.search(search_text, 1, 500)
-            
-    def found_text(self, widget, count):
-        print(widget, count)           
+        
+    def print_match_count(self, widget, count):
+        search_text = self.searchentry.get_text()
+        self.status_label.set_text(f"found {count} matches of '{search_text}'")           
             
     def on_link_hover(self, widget, hit_test, *args):
         if not hit_test.get_link_uri () == None:
