@@ -172,6 +172,7 @@ class Browser(Gtk.Window):
         
         # search inside page
         self.page_finder = WebKit2.FindController(web_view=self.view)
+        self.page_finder.connect("notify::counted-matches", self.found_text)
         self.search_win = Gtk.SearchBar()
         self.searchentry = Gtk.SearchEntry()
         self.searchentry.connect("activate", self.find_in_page)
@@ -253,7 +254,7 @@ class Browser(Gtk.Window):
         
     def on_key_event(self, widget, event, *args):
         kname  = Gdk.keyval_name(event.keyval)
-        if event.keyval == 65288:
+        if event.keyval == 65288 and not self.searchentry.has_focus():
             self.view.go_back()
         if (kname == "f" and
             event.state == Gdk.ModifierType.CONTROL_MASK):
@@ -263,7 +264,7 @@ class Browser(Gtk.Window):
             else:
                 self.search_win.set_search_mode(True)
                 self.find_in_page()
-        if kname == "Escape":
+        if kname == "Escape" and self.searchentry.has_focus():
             self.page_finder.search_finish()
         
     def item_activated(self, wdg, i):
@@ -274,6 +275,9 @@ class Browser(Gtk.Window):
         search_text = self.searchentry.get_text()
         if not search_text == "":
             self.page_finder.search(search_text, 1, 500)
+            
+    def found_text(self, widget, count):
+        print(widget, count)           
             
     def on_link_hover(self, widget, hit_test, *args):
         if not hit_test.get_link_uri () == None:
