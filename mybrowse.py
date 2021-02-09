@@ -12,6 +12,21 @@ browser_id = 'MyBrowse 0.1'
 
 conf_dir = f"{os.path.expanduser('~')}/.config/mybrowse/"
 
+link_list = {"QWant Lite": "https://lite.qwant.com/", 
+            "Ubuntu Users Forum": "https://forum.ubuntuusers.de/last12/", 
+            "Google": "https://google.de",
+            "Linux Mint Users": "https://www.linuxmintusers.de"
+            }
+
+name_list = []
+url_list = []
+
+for link in link_list.items():
+    name = link[0]
+    url = link[1]
+    name_list.append(name)
+    url_list.append(url)
+
 css = """
 #addressbar progress
 {
@@ -60,6 +75,7 @@ class Browser(Gtk.Window):
         self.set_name("window")
         self.view = WebKit2.WebView()
         self.view.set_zoom_level(0.9)
+        self.connect("key-press-event", self.on_key_event)
         self.view.connect("notify::title", self.change_title)
         self.view.connect("notify::uri", self.change_uri)
         self.view.connect("notify::estimated-load-progress", self.load_progress)
@@ -104,24 +120,19 @@ class Browser(Gtk.Window):
         self.searchbar.set_width_chars(32)
         self.menu.pack_end(self.searchbar, False, False, 10)
         
-        # popover links
+#        # popover links
         self.popover = Gtk.Popover()
         self.popover.set_property('margin', 0)
-        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        # QWant
-        url_btn_1 = Gtk.ModelButton(label="QWant Lite")
-        url_btn_1.connect("clicked", self.url_btn_1_clicked)
-        vbox.pack_start(url_btn_1, False, True, 2)
-        # ubuntu forum
-        url_btn_2 = Gtk.ModelButton(label="Ubuntu Users Forum")
-        vbox.pack_start(url_btn_2, False, True, 2)
-        url_btn_2.connect("clicked", self.url_btn_2_clicked)
-        # Google
-        url_btn_3 = Gtk.ModelButton(label="Google")
-        url_btn_3.connect("clicked", self.url_btn_3_clicked)
-        vbox.pack_start(url_btn_3, False, True, 2)
-        vbox.show_all()
-        self.popover.add(vbox)
+        link_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+   
+        for x in range(len(name_list)):
+            url_btn = Gtk.ModelButton(label=name_list[x])
+            link_box.pack_start(url_btn, False, True, 2)
+            url_btn.connect("clicked", self.item_activated, x)            
+            
+        # show menu
+        link_box.show_all()
+        self.popover.add(link_box)
         self.popover.set_position(Gtk.PositionType.BOTTOM)
         img = Gtk.Image.new_from_icon_name("browser", 2)
         button = Gtk.MenuButton(label="Links", image=img, popover=self.popover, relief=2)
@@ -134,7 +145,16 @@ class Browser(Gtk.Window):
         style.add_class("button")
         screen = Gdk.Screen.get_default()
         priority = Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-        style.add_provider_for_screen(screen, provider, priority)        
+        style.add_provider_for_screen(screen, provider, priority) 
+        
+        # search inside page
+        self.page_finder = WebKit2.FindController(web_view=self.view)
+        self.search_win = Gtk.SearchBar()
+        self.searchentry = Gtk.SearchEntry()
+        self.searchentry.connect("activate", self.find_in_page)
+        self.search_win.connect_entry(self.searchentry)
+        self.search_win.add(self.searchentry)
+        self.vbox.pack_end(self.search_win, False, False, 2)
         
         # connect
         self.addressbar.connect("activate", self.change_url)
@@ -202,6 +222,30 @@ class Browser(Gtk.Window):
         url = "https://google.de"
         self.addressbar.set_text(url)
         self.view.load_uri(url)
+        
+    def on_key_event(self, widget, event, *args):
+        kname  = Gdk.keyval_name(event.keyval)
+        if event.keyval == 65288:
+            self.view.go_back()
+        if (kname == "f" and
+            event.state == Gdk.ModifierType.CONTROL_MASK):
+            if self.search_win.get_search_mode():
+                self.search_win.set_search_mode(False)
+                self.page_finder.search_finish()
+            else:
+                self.search_win.set_search_mode(True)
+                self.find_in_page()
+        if kname == "Escape":
+            self.page_finder.search_finish()
+        
+    def item_activated(self, wdg, i):
+        url = url_list[i]
+        self.view.load_uri(url)
+        
+    def find_in_page(self, *args):
+        search_text = self.searchentry.get_text()
+        if not search_text == "":
+            self.page_finder.search(search_text, 1, 500)
 
         
 if __name__ == "__main__":
