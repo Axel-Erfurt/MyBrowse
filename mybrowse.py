@@ -249,10 +249,6 @@ class Browser(Gtk.Window):
         
     def on_key_event(self, widget, event, *args):
         kname  = Gdk.keyval_name(event.keyval)
-        if (event.keyval == 65288 
-            and not self.searchentry.has_focus()
-            and not self.addressbar.has_focus()):
-            self.view.go_back()
         if (kname == "f" and
             event.state == Gdk.ModifierType.CONTROL_MASK):
             if self.search_win.get_search_mode():
