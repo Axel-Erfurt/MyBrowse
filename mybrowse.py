@@ -14,8 +14,12 @@ conf_dir = f"{os.path.expanduser('~')}/.config/mybrowse/"
 
 link_list = {"QWant Lite": "https://lite.qwant.com/", 
             "Ubuntu Users Forum": "https://forum.ubuntuusers.de/last12/", 
+            "github": "https://github.com",
             "Google": "https://google.de",
-            "Linux Mint Users": "https://www.linuxmintusers.de"
+            "YouTube alternative invidious": "https://invidious.tube",
+            "Linux Mint Users": "https://www.linuxmintusers.de",
+            "ARD TV": "http://mcdn.daserste.de/daserste/de/master.m3u8",
+            "MDR TV": "https://mdrtvthhls.akamaized.net/hls/live/2016880/mdrtvth/master.m3u8"
             }
 
 name_list = []
@@ -33,6 +37,11 @@ css = """
    background: #e9f3ff;
    border: 1px;
 }
+button
+{
+   background: #eee;
+   border: 0px;
+}
 .button :hover
 {
    background: #ace;
@@ -45,6 +54,10 @@ popover {
     background: #666;
     color: #eee;
     font-size: 9pt;
+}
+#statuslabel {
+    color: #444;
+    font-size: 8pt;
 }
 """
 
@@ -79,28 +92,38 @@ class Browser(Gtk.Window):
         self.view.connect("notify::title", self.change_title)
         self.view.connect("notify::uri", self.change_uri)
         self.view.connect("notify::estimated-load-progress", self.load_progress)
+        self.view.connect("mouse-target-changed", self.on_link_hover)
         self.vbox = Gtk.Box(orientation=Gtk.STYLE_CLASS_VERTICAL, 
                             margin_left=5, margin_right=5, spacing=4)
         self.vbox.expand = True
         self.set_icon_name("browser")
 #        self.set_icon_from_file(conf_dir + 'mybrowse.png')
 
+        # plugins
+        self.agent=self.view.get_settings()
+        self.agent.set_property('user-agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36')
+        self.agent.set_property("enable-plugins", True)
+        self.agent.set_property("enable-spatial-navigation", True)
+        self.agent.set_property('enable-fullscreen', True)
+        self.agent.set_property('enable-media-stream', True)
+        self.agent.set_property('enable-webaudio', True)
+
         # buttons
         self.menu = Gtk.Box(orientation=Gtk.STYLE_CLASS_HORIZONTAL, spacing=4)
         self.menu.expand = False
-        self.back = Gtk.Button()
+        self.back = Gtk.Button(can_focus=False)
         self.back_arrow = Gtk.Image.new_from_icon_name('go-previous', 2)
         self.back.add(self.back_arrow)
         self.menu.add(self.back)
-        self.forward = Gtk.Button()
+        self.forward = Gtk.Button(can_focus=False)
         self.forward_arrow = Gtk.Image.new_from_icon_name('go-next', 2)
         self.forward.add(self.forward_arrow)
         self.menu.add(self.forward)
-        self.reload = Gtk.Button()
+        self.reload = Gtk.Button(can_focus=False)
         self.reload_arrow = Gtk.Image.new_from_icon_name('view-refresh', 2)
         self.reload.add(self.reload_arrow)
         self.menu.add(self.reload)
-        self.home = Gtk.Button()
+        self.home = Gtk.Button(can_focus=False)
         self.home_arrow = Gtk.Image.new_from_icon_name('go-home', 2)
         self.home.add(self.home_arrow)
         self.menu.add(self.home)
@@ -166,6 +189,11 @@ class Browser(Gtk.Window):
 
         self.sw = Gtk.ScrolledWindow()
         self.sw.add(self.view)
+        
+        # statusbar label
+        self.status_label = Gtk.Label(label="myBrowse")
+        self.status_label.set_name("statuslabel")
+        self.vbox.pack_end(self.status_label, False, False, 0)
 
         self.vbox.pack_start(self.sw, True, True, 0)
         self.add(self.vbox)
@@ -246,6 +274,12 @@ class Browser(Gtk.Window):
         search_text = self.searchentry.get_text()
         if not search_text == "":
             self.page_finder.search(search_text, 1, 500)
+            
+    def on_link_hover(self, widget, hit_test, *args):
+        if not hit_test.get_link_uri () == None:
+            self.status_label.set_text(hit_test.get_link_uri ())
+        else:
+            self.status_label.set_text("")
 
         
 if __name__ == "__main__":
