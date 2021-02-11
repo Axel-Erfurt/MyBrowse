@@ -223,7 +223,7 @@ class Browser(Gtk.Window):
         self.addressbar.set_progress_fraction(progress)
 
     def do_search(self, widget):
-        search_text = f'"{self.searchbar.get_text()}"'
+        search_text = f'{self.searchbar.get_text()}'
         print(f"searching for '{search_text}'")
         search_url = f"https://lite.duckduckgo.com/lite?q={search_text}"
         self.addressbar.set_text(search_url)
