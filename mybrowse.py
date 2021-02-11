@@ -5,12 +5,9 @@ gi.require_version('Gtk', '3.0')
 gi.require_version('Gdk', '3.0')
 from gi.repository import Gtk, WebKit2, Gdk
 import configparser
-from pathlib import Path
 import sys
 
 browser_id = 'MyBrowse 0.1'
-
-conf_dir = f"{Path.home()}/.config/mybrowse/"
 
 link_list = {"QWant Lite": "https://lite.qwant.com/", 
             "Ubuntu Users Forum": "https://forum.ubuntuusers.de/last12/", 
@@ -61,25 +58,10 @@ popover {
 }
 """
 config = configparser.ConfigParser()
-conf_dir = f"{Path.home()}/.config/mybrowse/"
 
-p = Path(conf_dir)
+conf_file = 'mybrowse.cfg'
 
-if p.is_dir():
-    print(f"{conf_dir} exists")
-else:
-    print(f"{conf_dir} not exists, creating ...")   
-    p.mkdir()
-
-conf_file = p / 'mybrowse.cfg'
-
-if Path.is_file(conf_file):
-    print(f"found config file: {conf_file}")
-    config.read(conf_file)
-else:
-    print("no config file found")
-
-config.read(conf_dir + 'mybrowse.cfg')
+config.read(conf_file)
     
 
 class Browser(Gtk.Window):
@@ -243,7 +225,7 @@ class Browser(Gtk.Window):
     def do_search(self, widget):
         search_text = f'"{self.searchbar.get_text()}"'
         print(f"searching for '{search_text}'")
-        search_url = f"{self.startpage}search?q={search_text}"
+        search_url = f"https://lite.duckduckgo.com/lite?q={search_text}"
         self.addressbar.set_text(search_url)
         self.view.load_uri(search_url)
         
